@@ -298,11 +298,16 @@
         .task-name { font-size: 15px; font-weight: 500; }
         .task-time { font-size: 12px; color: var(--dim); margin-top: 2px; }
 
-        .check-anim {
+        .check-anim, .complete-anim {
             display: inline-block;
             color: var(--success);
             font-weight: 600;
             animation: checkPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        .task-item.done .task-name {
+            text-decoration: line-through;
+            opacity: 0.6;
         }
 
         .task-remove {
@@ -908,6 +913,9 @@
         let topic = localStorage.getItem('ntfy_topic') || '';
         let userName = localStorage.getItem('user_name') || '';
         let newestTaskId = null;
+        let ntfyEventSource = null;
+        let completionDebounceTimer = null;
+        const COMPLETION_SUFFIX = ' \u2014 Complete! \u{1F3C6}';
 
         // ============================================================
         //  MOTIVATIONAL MESSAGES
@@ -1055,6 +1063,7 @@
             // Topic
             if (topic) {
                 showTopicBanner();
+                setupNtfySubscription();
             } else {
                 document.getElementById('setup-panel').classList.remove('hidden');
             }
@@ -1088,6 +1097,7 @@
             topic = raw.toLowerCase().replace(/[^a-z0-9_-]/g, '-');
             localStorage.setItem('ntfy_topic', topic);
             showTopicBanner();
+            setupNtfySubscription();
             document.getElementById('setup-panel').classList.add('hidden');
             showStatus('info', 'Saved! Subscribe to "' + topic + '" in the ntfy app.');
             sound.taskAdded();
@@ -1225,11 +1235,11 @@
             }
 
             list.innerHTML = tasks.map(t => `
-                <div class="task-item${t.id === newestTaskId ? ' anim-in' : ''}" data-id="${t.id}">
+                <div class="task-item${t.id === newestTaskId ? ' anim-in' : ''}${t.completed ? ' done' : ''}" data-id="${t.id}">
                     <span class="task-emoji">${t.emoji}</span>
                     <div class="task-info">
                         <div class="task-name">${esc(t.name)}</div>
-                        <div class="task-time">${fmt12(t.time)}${t.scheduled ? ' <span class="check-anim">\u2713 Scheduled</span>' : ''}</div>
+                        <div class="task-time">${fmt12(t.time)}${t.completed ? ' <span class="complete-anim">\u2705 Complete</span>' : (t.scheduled ? ' <span class="check-anim">\u2713 Scheduled</span>' : '')}</div>
                     </div>
                     ${t.scheduled ? '' : '<button class="task-remove" onclick="removeTask(' + t.id + ')">\u00D7</button>'}
                 </div>
@@ -1246,6 +1256,54 @@
                 document.getElementById('progress-fill').style.width = `${(scheduled / tasks.length) * 100}%`;
                 document.getElementById('progress-text').textContent = `${scheduled} of ${tasks.length} scheduled`;
             }
+        }
+
+        // ============================================================
+        //  NTFY SUBSCRIPTION — listen for completion signals
+        // ============================================================
+        function setupNtfySubscription() {
+            if (!topic) return;
+            if (ntfyEventSource) {
+                ntfyEventSource.close();
+                ntfyEventSource = null;
+            }
+
+            // Subscribe from today's midnight so past completions are replayed on page load.
+            // Uses a separate hidden channel ({topic}-done) so the completion signal never
+            // appears as a notification in the user's ntfy app.
+            const todayMidnight = new Date();
+            todayMidnight.setHours(0, 0, 0, 0);
+            const sinceTs = Math.floor(todayMidnight.getTime() / 1000);
+
+            ntfyEventSource = new EventSource(
+                'https://ntfy.sh/' + topic + '-done/sse?since=' + sinceTs
+            );
+
+            ntfyEventSource.addEventListener('message', function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.event !== 'message') return;
+                    handleCompletionMessage(data);
+                } catch (e) { /* ignore parse errors */ }
+            });
+        }
+
+        function handleCompletionMessage(msg) {
+            const title = msg.title || '';
+            if (!title.endsWith(COMPLETION_SUFFIX)) return;
+
+            const taskName = title.slice(0, title.length - COMPLETION_SUFFIX.length);
+            const task = tasks.find(function(t) {
+                return t.name === taskName && !t.completed;
+            });
+            if (!task) return;
+
+            task.completed = true;
+            clearTimeout(completionDebounceTimer);
+            completionDebounceTimer = setTimeout(function() {
+                saveTasks();
+                renderTasks();
+            }, 100);
         }
 
         // ============================================================
@@ -1339,11 +1397,12 @@
                     {
                         action: 'http',
                         label: 'Done \u2705',
-                        url: 'https://ntfy.sh/' + topic,
+                        url: 'https://ntfy.sh/' + topic + '-done',
                         method: 'POST',
                         headers: {
-                            'Title': task.name + ' \u2014 Complete! \u{1F3C6}',
-                            'Tags': 'white_check_mark'
+                            'Title': task.name + COMPLETION_SUFFIX,
+                            'Tags': 'white_check_mark',
+                            'X-ID': 'done-' + task.id
                         },
                         body: `${namePrefix}Great job finishing "${task.name}"! Keep the streak going!`,
                         clear: true
@@ -1422,6 +1481,13 @@
                 } else if (document.activeElement.id === 'name-input') {
                     saveName();
                 }
+            }
+        });
+
+        window.addEventListener('beforeunload', function() {
+            if (ntfyEventSource) {
+                ntfyEventSource.close();
+                ntfyEventSource = null;
             }
         });
 
