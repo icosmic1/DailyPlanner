@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Cosmic Planner</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #06060f;
+            --card: rgba(18, 18, 40, 0.55);
+            --card-border: rgba(255, 255, 255, 0.07);
+            --accent: #e94560;
+            --accent-light: #ff6b8a;
+            --accent2: #0f3460;
+            --text: #eaeaea;
+            --dim: #6b7280;
+            --success: #00c853;
+            --border: #1e1e3a;
+            --glow: rgba(233, 69, 96, 0.15);
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+            background: linear-gradient(135deg, #06060f 0%, #10082a 30%, #060615 50%, #0a1628 75%, #06060f 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 25s ease infinite;
+            color: var(--text);
+            min-height: 100vh;
+            min-height: 100dvh;
+            padding: 16px;
+            padding-bottom: 100px;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        /* ===== KEYFRAMES ===== */
+        @keyframes gradientShift {
+            0%   { background-position: 0% 50%; }
+            50%  { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes slideInRight {
+            0%   { opacity: 0; transform: translateX(50px) scale(0.96); }
+            60%  { opacity: 1; transform: translateX(-6px) scale(1.01); }
+            80%  { transform: translateX(2px) scale(0.995); }
+            100% { opacity: 1; transform: translateX(0) scale(1); }
+        }
+
+        @keyframes slideOutLeft {
+            0%   { opacity: 1; transform: translateX(0) scale(1); max-height: 70px; padding-top: 13px; padding-bottom: 13px; }
+            50%  { opacity: 0.3; transform: translateX(-50px) scale(0.85); }
+            100% { opacity: 0; transform: translateX(-100px) scale(0.7); max-height: 0; padding-top: 0; padding-bottom: 0; overflow: hidden; }
+        }
+
+        @keyframes tagPulse {
+            0%   { transform: scale(1); box-shadow: 0 0 0 0 rgba(233, 69, 96, 0.4); }
+            50%  { transform: scale(1.1); box-shadow: 0 0 16px 4px rgba(233, 69, 96, 0.2); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(233, 69, 96, 0); }
+        }
+
+        @keyframes shimmer {
+            0%   { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+
+        @keyframes checkPop {
+            0%   { opacity: 0; transform: scale(0) rotate(-30deg); }
+            60%  { opacity: 1; transform: scale(1.35) rotate(5deg); }
+            100% { opacity: 1; transform: scale(1) rotate(0deg); }
+        }
+
+        @keyframes bounceIn {
+            0%   { opacity: 0; transform: scale(0.3); }
+            50%  { transform: scale(1.06); }
+            70%  { transform: scale(0.96); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes cardFadeUp {
+            0%   { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50%      { transform: translateY(-8px); }
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.2; }
+            50%      { opacity: 1; }
+        }
+
+        @keyframes bannerTextIn {
+            0%   { opacity: 0; transform: translateY(16px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes cosmicGlow {
+            0%, 100% { text-shadow: 0 0 20px rgba(233, 69, 96, 0.3), 0 0 60px rgba(15, 52, 96, 0.2); }
+            50%      { text-shadow: 0 0 30px rgba(233, 69, 96, 0.5), 0 0 80px rgba(93, 173, 226, 0.3); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
+        @keyframes scaleIn {
+            0%   { opacity: 0; transform: scale(0.9); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        /* ===== LAYOUT ===== */
+        .container { max-width: 480px; margin: 0 auto; }
+
+        /* ===== HEADER ===== */
+        header { text-align: center; padding: 24px 0 16px; }
+
+        header h1 {
+            font-size: 24px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffffff 0%, #c8c8d0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.3px;
+            line-height: 1.3;
+        }
+
+        header .greeting-name {
+            color: var(--accent-light);
+            -webkit-text-fill-color: var(--accent-light);
+            cursor: pointer;
+        }
+
+        header .date {
+            color: var(--dim);
+            font-size: 13px;
+            margin-top: 6px;
+            font-weight: 500;
+        }
+
+        /* ===== GLASSMORPHIC CARDS ===== */
+        .card {
+            background: var(--card);
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 14px;
+            border: 1px solid var(--card-border);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .card.stagger {
+            opacity: 0;
+            animation: cardFadeUp 0.5s ease-out forwards;
+            animation-delay: var(--delay, 0s);
+        }
+
+        .card-title {
+            font-size: 11px;
+            color: var(--dim);
+            text-transform: uppercase;
+            letter-spacing: 1.4px;
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+
+        /* ===== INPUTS ===== */
+        input[type="text"], input[type="time"] {
+            width: 100%;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 14px;
+            padding: 14px 18px;
+            color: var(--text);
+            font-size: 16px;
+            outline: none;
+            margin-bottom: 10px;
+            -webkit-appearance: none;
+            transition: border-color 0.3s, box-shadow 0.3s, background 0.3s;
+        }
+
+        input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--glow);
+            background: rgba(255,255,255,0.06);
+        }
+
+        .row { display: flex; gap: 10px; }
+        .row input[type="text"] { flex: 1; margin-bottom: 0; }
+        .row input[type="time"] { width: 130px; flex-shrink: 0; margin-bottom: 0; }
+
+        /* ===== BUTTONS ===== */
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn:active { transform: scale(0.97); }
+
+        .btn-add {
+            background: var(--accent2);
+            color: var(--text);
+            margin-top: 10px;
+        }
+
+        .btn-accent {
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            color: white;
+            box-shadow: 0 4px 20px rgba(233, 69, 96, 0.3);
+        }
+
+        .btn-schedule {
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            color: white;
+            position: fixed;
+            bottom: 20px;
+            left: 16px;
+            right: 16px;
+            max-width: 480px;
+            margin: 0 auto;
+            z-index: 10;
+            box-shadow: 0 4px 28px rgba(233, 69, 96, 0.35);
+            padding: 16px;
+            font-size: 17px;
+        }
+
+        .btn-schedule:disabled {
+            background: #222;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        .btn-schedule.shimmer {
+            background: linear-gradient(90deg, var(--accent) 0%, var(--accent-light) 25%, var(--accent) 50%, var(--accent-light) 75%, var(--accent) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s linear infinite;
+        }
+
+        /* ===== QUICK TAGS ===== */
+        .quick-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+
+        .tag {
+            padding: 8px 14px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .tag:active { background: var(--accent2); border-color: var(--accent2); }
+        .tag.pulse { animation: tagPulse 0.4s ease-out; }
+
+        /* ===== TASK LIST ===== */
+        .task-item {
+            display: flex;
+            align-items: center;
+            padding: 13px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .task-item:last-child { border-bottom: none; }
+        .task-item:active { transform: translateY(-1px); }
+
+        .task-item.anim-in {
+            animation: slideInRight 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        .task-item.anim-out {
+            animation: slideOutLeft 0.4s ease-in forwards;
+        }
+
+        .task-emoji { font-size: 22px; margin-right: 12px; width: 30px; text-align: center; }
+        .task-info { flex: 1; }
+        .task-name { font-size: 15px; font-weight: 500; }
+        .task-time { font-size: 12px; color: var(--dim); margin-top: 2px; }
+
+        .check-anim {
+            display: inline-block;
+            color: var(--success);
+            font-weight: 600;
+            animation: checkPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        .task-remove {
+            color: var(--dim);
+            font-size: 22px;
+            cursor: pointer;
+            padding: 8px;
+            border: none;
+            background: none;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+
+        .task-remove:active { color: var(--accent); }
+
+        /* ===== PROGRESS BAR ===== */
+        .progress-wrap { margin-top: 12px; display: none; }
+        .progress-wrap.show { display: block; }
+
+        .progress-bg {
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--success), #5dade2);
+            border-radius: 2px;
+            transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .progress-text {
+            font-size: 11px;
+            color: var(--dim);
+            margin-top: 6px;
+            text-align: center;
+        }
+
+        /* ===== EMPTY STATE ===== */
+        .empty-state {
+            text-align: center;
+            padding: 32px 16px;
+            color: var(--dim);
+        }
+
+        .empty-state .icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        /* ===== OVERLAYS ===== */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(4, 4, 12, 0.92);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .overlay.show { opacity: 1; pointer-events: all; }
+
+        .overlay-content {
+            text-align: center;
+            padding: 40px 30px;
+            max-width: 340px;
+        }
+
+        .overlay.show .overlay-content {
+            animation: bounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        .overlay-content .big-icon { font-size: 56px; margin-bottom: 16px; }
+        .overlay-content h2 { font-size: 22px; margin-bottom: 8px; font-weight: 700; }
+        .overlay-content p { color: var(--dim); margin-bottom: 24px; font-size: 14px; line-height: 1.6; }
+
+        /* ===== COSMIC BANNER ===== */
+        .cosmic-banner {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(ellipse at center, #10082a 0%, #06060f 70%);
+            opacity: 1;
+            transition: opacity 0.8s ease;
+        }
+
+        .cosmic-banner.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .cosmic-banner .stars {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+        }
+
+        .cosmic-banner .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle var(--dur, 3s) ease-in-out infinite;
+            animation-delay: var(--delay, 0s);
+        }
+
+        .cosmic-banner .content {
+            position: relative;
+            text-align: center;
+            z-index: 1;
+            padding: 30px;
+        }
+
+        .cosmic-banner .cosmic-symbol {
+            font-size: 14px;
+            color: var(--dim);
+            letter-spacing: 6px;
+            margin-bottom: 24px;
+            opacity: 0;
+            animation: bannerTextIn 0.6s ease-out 0.3s forwards;
+        }
+
+        .cosmic-banner .cosmic-title {
+            font-size: 32px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #e94560, #ff6b8a, #5dade2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+            opacity: 0;
+            animation: bannerTextIn 0.6s ease-out 0.6s forwards, cosmicGlow 4s ease-in-out infinite 1.2s;
+        }
+
+        .cosmic-banner .cosmic-subtitle {
+            font-size: 16px;
+            color: var(--dim);
+            font-weight: 400;
+            margin-bottom: 8px;
+            opacity: 0;
+            animation: bannerTextIn 0.6s ease-out 0.9s forwards;
+        }
+
+        .cosmic-banner .cosmic-author {
+            font-size: 14px;
+            color: rgba(233, 69, 96, 0.7);
+            font-style: italic;
+            margin-bottom: 40px;
+            opacity: 0;
+            animation: bannerTextIn 0.6s ease-out 1.2s forwards;
+        }
+
+        .cosmic-banner .cosmic-btn {
+            opacity: 0;
+            animation: bannerTextIn 0.6s ease-out 1.6s forwards;
+        }
+
+        .cosmic-banner .cosmic-btn .btn {
+            padding: 16px 48px;
+            font-size: 17px;
+            border-radius: 30px;
+        }
+
+        /* ===== NAME INPUT SCREEN ===== */
+        .name-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 150;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(ellipse at center, #10082a 0%, #06060f 70%);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        .name-screen.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .name-screen .content {
+            text-align: center;
+            padding: 30px;
+            max-width: 360px;
+            width: 100%;
+        }
+
+        .name-screen h2 {
+            font-size: 26px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .name-screen p {
+            color: var(--dim);
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+
+        .name-screen input {
+            text-align: center;
+            font-size: 20px;
+            padding: 16px;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.12);
+            margin-bottom: 16px;
+        }
+
+        .name-screen input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--glow);
+        }
+
+        /* ===== TOPIC BAR ===== */
+        .topic-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 4px 0;
+        }
+
+        .topic-bar .label { color: var(--dim); font-size: 12px; }
+
+        .topic-bar .value {
+            color: var(--accent);
+            font-weight: 500;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        /* ===== SETUP ===== */
+        .setup-steps {
+            font-size: 13px;
+            color: var(--dim);
+            line-height: 1.8;
+            margin-bottom: 14px;
+        }
+
+        .setup-steps strong { color: var(--text); }
+
+        /* ===== STATUS BAR ===== */
+        .status-bar {
+            text-align: center;
+            padding: 10px 14px;
+            border-radius: 12px;
+            margin-bottom: 14px;
+            font-size: 13px;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .status-bar.info { display: block; background: rgba(15,52,96,0.35); color: #5dade2; }
+        .status-bar.error { display: block; background: rgba(233,69,96,0.2); color: var(--accent); }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <!-- ===== COSMIC BANNER (first-time only) ===== -->
+    <div class="cosmic-banner" id="cosmic-banner" style="display:none;">
+        <div class="stars" id="stars-container"></div>
+        <div class="content">
+            <div class="cosmic-symbol">&#10022; &#10022; &#10022;</div>
+            <div class="cosmic-title">cosmic planner</div>
+            <div class="cosmic-subtitle">Designed by Abhishek</div>
+            <div class="cosmic-author">for his cosmic journey</div>
+            <div class="cosmic-btn">
+                <button class="btn btn-accent" onclick="dismissBanner()">Let's Begin</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== NAME INPUT SCREEN ===== -->
+    <div class="name-screen" id="name-screen">
+        <div class="content">
+            <div style="font-size:48px; margin-bottom:16px;">&#9996;&#65039;</div>
+            <h2>Welcome!</h2>
+            <p>What should I call you?</p>
+            <input type="text" id="name-input" placeholder="Your name..." autocomplete="off" autocapitalize="words">
+            <button class="btn btn-accent" onclick="saveName()">Continue</button>
+        </div>
+    </div>
+
+    <!-- ===== MAIN APP ===== -->
+    <div class="container" id="main-app" style="display:none;">
+        <header>
+            <h1 id="greeting"></h1>
+            <div class="date" id="today-date"></div>
+        </header>
+
+        <!-- Notification channel banner -->
+        <div id="topic-banner" class="card hidden">
+            <div class="topic-bar">
+                <span class="label">Notifications via ntfy</span>
+                <span class="value" onclick="toggleSetup()" id="topic-display"></span>
+            </div>
+        </div>
+
+        <!-- Setup panel -->
+        <div id="setup-panel" class="card hidden">
+            <div class="card-title">Setup Notifications</div>
+            <div class="setup-steps">
+                1. Install <strong>ntfy</strong> from the App Store<br>
+                2. Open ntfy &rarr; tap <strong>+</strong> &rarr; subscribe to a channel<br>
+                3. Enter the <strong>same channel name</strong> below
+            </div>
+            <input type="text" id="topic-input" placeholder="e.g. my-daily-plan-abc"
+                   autocapitalize="off" autocorrect="off" spellcheck="false">
+            <button class="btn btn-add" onclick="saveTopic()">Save Channel</button>
+        </div>
+
+        <!-- Quick add -->
+        <div class="card">
+            <div class="card-title">Quick Add</div>
+            <div class="quick-tags">
+                <span class="tag" onclick="quickAdd('Exercise','&#127939;',this)">&#127939; Exercise</span>
+                <span class="tag" onclick="quickAdd('Read','&#128214;',this)">&#128214; Read</span>
+                <span class="tag" onclick="quickAdd('Meditate','&#129496;',this)">&#129496; Meditate</span>
+                <span class="tag" onclick="quickAdd('Drink Water','&#128167;',this)">&#128167; Water</span>
+                <span class="tag" onclick="quickAdd('Journal','&#128221;',this)">&#128221; Journal</span>
+                <span class="tag" onclick="quickAdd('Walk','&#128694;',this)">&#128694; Walk</span>
+                <span class="tag" onclick="quickAdd('Stretch','&#129336;',this)">&#129336; Stretch</span>
+                <span class="tag" onclick="quickAdd('No Phone','&#128245;',this)">&#128245; No Phone</span>
+            </div>
+
+            <div class="card-title" style="margin-top:4px;">Custom task</div>
+            <div class="row">
+                <input type="text" id="task-input" placeholder="Task name...">
+                <input type="time" id="time-input">
+            </div>
+            <button class="btn btn-add" onclick="addTask()">+ Add Task</button>
+        </div>
+
+        <!-- Status -->
+        <div id="status" class="status-bar"></div>
+
+        <!-- Task list -->
+        <div class="card">
+            <div class="card-title">Today's Plan &mdash; <span id="task-count">0</span> tasks</div>
+            <div id="task-list">
+                <div class="empty-state">
+                    <div class="icon">&#128203;</div>
+                    <p>Add tasks to plan your day</p>
+                </div>
+            </div>
+            <div class="progress-wrap" id="progress-wrap">
+                <div class="progress-bg"><div class="progress-fill" id="progress-fill"></div></div>
+                <div class="progress-text" id="progress-text">0 of 0 scheduled</div>
+            </div>
+        </div>
+
+        <!-- Schedule button -->
+        <button class="btn btn-schedule" id="schedule-btn" onclick="scheduleAll()" disabled>
+            Schedule My Day
+        </button>
+
+        <!-- Success overlay -->
+        <div class="overlay" id="success-overlay">
+            <div class="overlay-content">
+                <div class="big-icon">&#127919;</div>
+                <h2 id="success-title">Day Planned!</h2>
+                <p id="success-msg"></p>
+                <button class="btn btn-accent" onclick="closeOverlay()">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        //  SOUND ENGINE — Web Audio API, zero external files
+        // ============================================================
+        class SoundEngine {
+            constructor() { this.ctx = null; }
+
+            init() {
+                if (this.ctx) return;
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            ensure() {
+                this.init();
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+            }
+
+            _tone(freq, type, start, dur, vol = 0.25) {
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, start);
+                gain.gain.setValueAtTime(0, start);
+                gain.gain.linearRampToValueAtTime(vol, start + 0.005);
+                gain.gain.linearRampToValueAtTime(0, start + dur);
+                osc.connect(gain).connect(this.ctx.destination);
+                osc.start(start);
+                osc.stop(start + dur);
+            }
+
+            taskAdded() {
+                try {
+                    this.ensure();
+                    const t = this.ctx.currentTime;
+                    this._tone(880, 'sine', t, 0.08, 0.2);
+                    this._tone(1100, 'sine', t + 0.07, 0.1, 0.22);
+                    if (navigator.vibrate) navigator.vibrate(10);
+                } catch(e) {}
+            }
+
+            taskRemoved() {
+                try {
+                    this.ensure();
+                    const t = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, t);
+                    osc.frequency.linearRampToValueAtTime(200, t + 0.2);
+                    gain.gain.setValueAtTime(0.15, t);
+                    gain.gain.linearRampToValueAtTime(0, t + 0.2);
+                    osc.connect(gain).connect(this.ctx.destination);
+                    osc.start(t);
+                    osc.stop(t + 0.25);
+                    if (navigator.vibrate) navigator.vibrate([10, 30, 10]);
+                } catch(e) {}
+            }
+
+            tagTap() {
+                try {
+                    this.ensure();
+                    this._tone(1000, 'sine', this.ctx.currentTime, 0.04, 0.12);
+                } catch(e) {}
+            }
+
+            scheduleStart() {
+                try {
+                    this.ensure();
+                    const t = this.ctx.currentTime;
+                    this._tone(440, 'sine', t, 0.1, 0.18);
+                    this._tone(550, 'sine', t + 0.1, 0.1, 0.2);
+                    this._tone(660, 'sine', t + 0.2, 0.12, 0.22);
+                    if (navigator.vibrate) navigator.vibrate(15);
+                } catch(e) {}
+            }
+
+            tick() {
+                try {
+                    this.ensure();
+                    this._tone(1200, 'sine', this.ctx.currentTime, 0.05, 0.18);
+                } catch(e) {}
+            }
+
+            fanfare() {
+                try {
+                    this.ensure();
+                    const t = this.ctx.currentTime;
+                    const notes = [523, 659, 784, 1047];
+                    const durs = [0.12, 0.12, 0.12, 0.35];
+                    let offset = 0;
+                    notes.forEach((freq, i) => {
+                        this._tone(freq, 'sine', t + offset, durs[i], 0.25);
+                        this._tone(freq, 'triangle', t + offset, durs[i], 0.08);
+                        offset += durs[i] - 0.02;
+                    });
+                    if (navigator.vibrate) navigator.vibrate([15, 50, 15, 50, 30]);
+                } catch(e) {}
+            }
+
+            error() {
+                try {
+                    this.ensure();
+                    this._tone(150, 'sawtooth', this.ctx.currentTime, 0.25, 0.15);
+                    if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
+                } catch(e) {}
+            }
+        }
+
+        const sound = new SoundEngine();
+
+        // Bootstrap audio on first interaction
+        const _audioBootstrap = () => { sound.ensure(); };
+        document.addEventListener('touchstart', _audioBootstrap, { once: true });
+        document.addEventListener('click', _audioBootstrap, { once: true });
+
+        // ============================================================
+        //  CONFETTI ENGINE — Canvas particles
+        // ============================================================
+        class ConfettiEngine {
+            constructor() {
+                this.canvas = null;
+                this.ctx2d = null;
+                this.particles = [];
+                this.raf = null;
+                this.startTime = 0;
+            }
+
+            _colors = ['#e94560','#ff6b8a','#0f3460','#5dade2','#00c853','#ffd700','#ff9800','#ab47bc'];
+            _shapes = ['circle','square','ribbon'];
+
+            burst(x, y, count = 80) {
+                this._createCanvas();
+                this.particles = [];
+                for (let i = 0; i < count; i++) {
+                    this.particles.push({
+                        x, y,
+                        vx: (Math.random() - 0.5) * 16,
+                        vy: Math.random() * -14 - 4,
+                        size: Math.random() * 6 + 3,
+                        color: this._colors[Math.floor(Math.random() * this._colors.length)],
+                        shape: this._shapes[Math.floor(Math.random() * this._shapes.length)],
+                        rotation: Math.random() * Math.PI * 2,
+                        rotVel: (Math.random() - 0.5) * 0.3,
+                        opacity: 1
+                    });
+                }
+                this.startTime = performance.now();
+                this._animate();
+            }
+
+            _createCanvas() {
+                if (this.canvas) this.canvas.remove();
+                this.canvas = document.createElement('canvas');
+                const dpr = window.devicePixelRatio || 1;
+                this.canvas.style.cssText = 'position:fixed;inset:0;z-index:300;pointer-events:none;width:100vw;height:100vh;';
+                this.canvas.width = window.innerWidth * dpr;
+                this.canvas.height = window.innerHeight * dpr;
+                this.ctx2d = this.canvas.getContext('2d');
+                this.ctx2d.scale(dpr, dpr);
+                document.body.appendChild(this.canvas);
+            }
+
+            _animate() {
+                const elapsed = performance.now() - this.startTime;
+                const w = window.innerWidth, h = window.innerHeight;
+
+                this.ctx2d.clearRect(0, 0, w, h);
+
+                if (elapsed > 3500) { this.destroy(); return; }
+
+                for (const p of this.particles) {
+                    p.vy += 0.35;
+                    p.vx *= 0.98;
+                    p.vy *= 0.98;
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.rotation += p.rotVel;
+
+                    if (elapsed > 2500) {
+                        p.opacity = Math.max(0, 1 - (elapsed - 2500) / 1000);
+                    }
+
+                    this.ctx2d.save();
+                    this.ctx2d.globalAlpha = p.opacity;
+                    this.ctx2d.translate(p.x, p.y);
+                    this.ctx2d.rotate(p.rotation);
+                    this.ctx2d.fillStyle = p.color;
+
+                    if (p.shape === 'circle') {
+                        this.ctx2d.beginPath();
+                        this.ctx2d.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+                        this.ctx2d.fill();
+                    } else if (p.shape === 'square') {
+                        this.ctx2d.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+                    } else {
+                        this.ctx2d.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+                    }
+
+                    this.ctx2d.restore();
+                }
+
+                this.raf = requestAnimationFrame(() => this._animate());
+            }
+
+            destroy() {
+                if (this.raf) cancelAnimationFrame(this.raf);
+                if (this.canvas) this.canvas.remove();
+                this.canvas = null;
+                this.particles = [];
+            }
+        }
+
+        const confetti = new ConfettiEngine();
+
+        // ============================================================
+        //  STATE
+        // ============================================================
+        let tasks = [];
+        let topic = localStorage.getItem('ntfy_topic') || '';
+        let userName = localStorage.getItem('user_name') || '';
+        let newestTaskId = null;
+
+        // ============================================================
+        //  MOTIVATIONAL MESSAGES
+        // ============================================================
+        const pushMessages = [
+            "Small steps lead to big results! Try again in 30 min.",
+            "Remember why you started. You've got this!",
+            "Progress, not perfection. Give it another shot!",
+            "The best time to start is now. Let's go!",
+            "You're closer than you think. Keep pushing!",
+            "Every expert was once a beginner. Take that first step!",
+            "Your future self will thank you. Do it now!",
+            "Discipline beats motivation. Just start!",
+            "You didn't come this far to only come this far!",
+            "One small action changes everything. Go!",
+            "The hardest part is starting. You can do this!",
+            "Make yourself proud. Take action now!",
+            "Done is better than perfect. Just begin!",
+            "You've handled harder things. This is easy!",
+            "Imagine how good you'll feel after finishing this!"
+        ];
+
+        function randomMotivation() {
+            return pushMessages[Math.floor(Math.random() * pushMessages.length)];
+        }
+
+        // ============================================================
+        //  COSMIC BANNER (first-time only)
+        // ============================================================
+        function generateStars() {
+            const container = document.getElementById('stars-container');
+            if (!container) return;
+            for (let i = 0; i < 60; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.setProperty('--dur', (2 + Math.random() * 4) + 's');
+                star.style.setProperty('--delay', (Math.random() * 3) + 's');
+                if (Math.random() > 0.7) {
+                    star.style.width = '3px';
+                    star.style.height = '3px';
+                }
+                container.appendChild(star);
+            }
+        }
+
+        function showBanner() {
+            const banner = document.getElementById('cosmic-banner');
+            banner.style.display = 'flex';
+            generateStars();
+        }
+
+        function dismissBanner() {
+            const banner = document.getElementById('cosmic-banner');
+            banner.classList.add('fade-out');
+            localStorage.setItem('banner_shown', 'true');
+            setTimeout(() => {
+                banner.style.display = 'none';
+                showNameScreen();
+            }, 800);
+        }
+
+        // ============================================================
+        //  NAME INPUT
+        // ============================================================
+        function showNameScreen() {
+            const screen = document.getElementById('name-screen');
+            screen.classList.add('show');
+            setTimeout(() => {
+                document.getElementById('name-input').focus();
+            }, 400);
+        }
+
+        function saveName() {
+            const input = document.getElementById('name-input').value.trim();
+            userName = input || 'friend';
+            localStorage.setItem('user_name', userName);
+            const screen = document.getElementById('name-screen');
+            screen.style.transition = 'opacity 0.5s ease';
+            screen.style.opacity = '0';
+            screen.style.pointerEvents = 'none';
+            setTimeout(() => {
+                screen.style.display = 'none';
+                startApp();
+            }, 500);
+        }
+
+        // ============================================================
+        //  GREETING
+        // ============================================================
+        function getGreeting(name) {
+            const hour = new Date().getHours();
+            const displayName = name.charAt(0).toUpperCase() + name.slice(1);
+            let greeting;
+            if (hour < 12) greeting = 'Good morning';
+            else if (hour < 17) greeting = 'Good afternoon';
+            else greeting = 'Good evening';
+            return `${greeting}, <span class="greeting-name" onclick="editName()">${displayName}</span>! What's the plan?`;
+        }
+
+        function editName() {
+            const newName = prompt('Change your name:', userName);
+            if (newName && newName.trim()) {
+                userName = newName.trim();
+                localStorage.setItem('user_name', userName);
+                document.getElementById('greeting').innerHTML = getGreeting(userName);
+            }
+        }
+
+        // ============================================================
+        //  APP INIT
+        // ============================================================
+        function boot() {
+            const bannerShown = localStorage.getItem('banner_shown');
+            const hasName = localStorage.getItem('user_name');
+
+            if (!bannerShown) {
+                showBanner();
+            } else if (!hasName) {
+                showNameScreen();
+            } else {
+                startApp();
+            }
+        }
+
+        function startApp() {
+            const app = document.getElementById('main-app');
+            app.style.display = 'block';
+
+            // Greeting
+            document.getElementById('greeting').innerHTML = getGreeting(userName);
+
+            // Date
+            const now = new Date();
+            const opts = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' };
+            document.getElementById('today-date').textContent = now.toLocaleDateString('en-US', opts);
+
+            // Default time
+            const next = new Date(now);
+            next.setHours(next.getHours() + 1, 0, 0, 0);
+            document.getElementById('time-input').value =
+                next.getHours().toString().padStart(2, '0') + ':00';
+
+            // Topic
+            if (topic) {
+                showTopicBanner();
+            } else {
+                document.getElementById('setup-panel').classList.remove('hidden');
+            }
+
+            // Load today's tasks
+            const saved = localStorage.getItem('tasks_' + dateKey());
+            if (saved) {
+                tasks = JSON.parse(saved);
+                renderTasks();
+            }
+
+            // Stagger card animations
+            setTimeout(() => {
+                document.querySelectorAll('#main-app .card').forEach((card, i) => {
+                    card.style.setProperty('--delay', `${i * 0.08}s`);
+                    card.classList.add('stagger');
+                });
+            }, 50);
+        }
+
+        function dateKey() {
+            return new Date().toISOString().split('T')[0];
+        }
+
+        // ============================================================
+        //  TOPIC
+        // ============================================================
+        function saveTopic() {
+            const raw = document.getElementById('topic-input').value.trim();
+            if (!raw) return;
+            topic = raw.toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+            localStorage.setItem('ntfy_topic', topic);
+            showTopicBanner();
+            document.getElementById('setup-panel').classList.add('hidden');
+            showStatus('info', 'Saved! Subscribe to "' + topic + '" in the ntfy app.');
+            sound.taskAdded();
+        }
+
+        function showTopicBanner() {
+            document.getElementById('topic-banner').classList.remove('hidden');
+            document.getElementById('topic-display').textContent = topic + ' \u270F\uFE0F';
+        }
+
+        function toggleSetup() {
+            const panel = document.getElementById('setup-panel');
+            panel.classList.toggle('hidden');
+            if (!panel.classList.contains('hidden')) {
+                document.getElementById('topic-input').value = topic;
+            }
+        }
+
+        // ============================================================
+        //  TASKS
+        // ============================================================
+        function quickAdd(name, emoji, el) {
+            sound.tagTap();
+            if (el) {
+                el.classList.remove('pulse');
+                void el.offsetWidth; // force reflow
+                el.classList.add('pulse');
+            }
+            document.getElementById('task-input').value = name;
+            document.getElementById('task-input').dataset.emoji = emoji;
+            document.getElementById('time-input').focus();
+        }
+
+        function addTask() {
+            const nameInput = document.getElementById('task-input');
+            const timeInput = document.getElementById('time-input');
+            const name = nameInput.value.trim();
+            const time = timeInput.value;
+
+            if (!name) { showStatus('error', 'Enter a task name'); sound.error(); return; }
+            if (!time) { showStatus('error', 'Pick a time'); sound.error(); return; }
+
+            const [h, m] = time.split(':').map(Number);
+            const target = new Date();
+            target.setHours(h, m, 0, 0);
+
+            if (target <= new Date()) {
+                showStatus('error', 'That time has already passed today');
+                sound.error();
+                return;
+            }
+
+            const emoji = nameInput.dataset.emoji || detectEmoji(name);
+            const id = Date.now();
+
+            tasks.push({ id, name, emoji, time, scheduled: false });
+            tasks.sort((a, b) => a.time.localeCompare(b.time));
+
+            newestTaskId = id;
+            saveTasks();
+            renderTasks();
+            sound.taskAdded();
+
+            nameInput.value = '';
+            nameInput.dataset.emoji = '';
+            hideStatus();
+
+            const nextH = (h + 1) % 24;
+            timeInput.value = nextH.toString().padStart(2, '0') + ':' + m.toString().padStart(2, '0');
+        }
+
+        function removeTask(id) {
+            const el = document.querySelector(`[data-id="${id}"]`);
+            sound.taskRemoved();
+            if (el) {
+                el.classList.add('anim-out');
+                el.addEventListener('animationend', () => {
+                    tasks = tasks.filter(t => t.id !== id);
+                    saveTasks();
+                    renderTasks();
+                }, { once: true });
+            } else {
+                tasks = tasks.filter(t => t.id !== id);
+                saveTasks();
+                renderTasks();
+            }
+        }
+
+        function saveTasks() {
+            localStorage.setItem('tasks_' + dateKey(), JSON.stringify(tasks));
+        }
+
+        function detectEmoji(text) {
+            const map = {
+                exercise: '\u{1F3C3}', run: '\u{1F3C3}', workout: '\u{1F4AA}', gym: '\u{1F3CB}\uFE0F',
+                read: '\u{1F4D6}', book: '\u{1F4D6}', study: '\u{1F4DA}',
+                meditate: '\u{1F9D8}', yoga: '\u{1F9D8}',
+                water: '\u{1F4A7}', drink: '\u{1F4A7}', hydrate: '\u{1F4A7}',
+                journal: '\u{1F4DD}', write: '\u{1F4DD}', diary: '\u{1F4DD}',
+                walk: '\u{1F6B6}', steps: '\u{1F6B6}',
+                stretch: '\u{1F938}', sleep: '\u{1F4A4}', nap: '\u{1F4A4}',
+                eat: '\u{1F34E}', meal: '\u{1F37D}\uFE0F', cook: '\u{1F373}',
+                code: '\u{1F4BB}', work: '\u{1F4BC}', email: '\u{1F4E7}',
+                call: '\u{1F4DE}', clean: '\u{1F9F9}', pray: '\u{1F932}',
+                phone: '\u{1F4F5}', focus: '\u{1F3AF}', learn: '\u{1F393}'
+            };
+            const lower = text.toLowerCase();
+            for (const [key, val] of Object.entries(map)) {
+                if (lower.includes(key)) return val;
+            }
+            return '\u{1F4CC}';
+        }
+
+        function fmt12(time24) {
+            const [h, m] = time24.split(':');
+            const hr = parseInt(h);
+            return `${hr % 12 || 12}:${m} ${hr >= 12 ? 'PM' : 'AM'}`;
+        }
+
+        function esc(text) {
+            const d = document.createElement('div');
+            d.textContent = text;
+            return d.innerHTML;
+        }
+
+        function renderTasks() {
+            const list = document.getElementById('task-list');
+            document.getElementById('task-count').textContent = tasks.length;
+            document.getElementById('schedule-btn').disabled = tasks.length === 0;
+
+            if (tasks.length === 0) {
+                list.innerHTML = '<div class="empty-state"><div class="icon">\u{1F4CB}</div><p>Add tasks to plan your day</p></div>';
+                document.getElementById('progress-wrap').classList.remove('show');
+                return;
+            }
+
+            list.innerHTML = tasks.map(t => `
+                <div class="task-item${t.id === newestTaskId ? ' anim-in' : ''}" data-id="${t.id}">
+                    <span class="task-emoji">${t.emoji}</span>
+                    <div class="task-info">
+                        <div class="task-name">${esc(t.name)}</div>
+                        <div class="task-time">${fmt12(t.time)}${t.scheduled ? ' <span class="check-anim">\u2713 Scheduled</span>' : ''}</div>
+                    </div>
+                    ${t.scheduled ? '' : '<button class="task-remove" onclick="removeTask(' + t.id + ')">\u00D7</button>'}
+                </div>
+            `).join('');
+
+            // Reset newest so it doesn't re-animate on next render
+            newestTaskId = null;
+
+            // Update progress
+            const scheduled = tasks.filter(t => t.scheduled).length;
+            if (scheduled > 0) {
+                const wrap = document.getElementById('progress-wrap');
+                wrap.classList.add('show');
+                document.getElementById('progress-fill').style.width = `${(scheduled / tasks.length) * 100}%`;
+                document.getElementById('progress-text').textContent = `${scheduled} of ${tasks.length} scheduled`;
+            }
+        }
+
+        // ============================================================
+        //  SCHEDULE
+        // ============================================================
+        async function scheduleAll() {
+            if (!topic) {
+                document.getElementById('setup-panel').classList.remove('hidden');
+                showStatus('error', 'Set up your notification channel first');
+                sound.error();
+                return;
+            }
+
+            const btn = document.getElementById('schedule-btn');
+            btn.disabled = true;
+            btn.classList.add('shimmer');
+            btn.textContent = 'Scheduling...';
+
+            sound.scheduleStart();
+
+            // Show progress
+            const wrap = document.getElementById('progress-wrap');
+            wrap.classList.add('show');
+
+            let ok = 0, fail = 0;
+            const total = tasks.length;
+
+            for (const task of tasks) {
+                if (task.scheduled) { ok++; updateProgress(ok, total); continue; }
+
+                try {
+                    await sendScheduledNotification(task);
+                    task.scheduled = true;
+                    ok++;
+                    sound.tick();
+
+                    // Animate the specific task row
+                    saveTasks();
+                    const row = document.querySelector(`[data-id="${task.id}"] .task-time`);
+                    if (row) row.innerHTML = `${fmt12(task.time)} <span class="check-anim">\u2713 Scheduled</span>`;
+                    const removeBtn = document.querySelector(`[data-id="${task.id}"] .task-remove`);
+                    if (removeBtn) removeBtn.remove();
+
+                    updateProgress(ok, total);
+
+                    // Small delay between tasks for visual effect
+                    await new Promise(r => setTimeout(r, 200));
+                } catch (err) {
+                    console.error('Schedule failed:', task.name, err);
+                    fail++;
+                }
+            }
+
+            saveTasks();
+            btn.classList.remove('shimmer');
+            btn.textContent = 'Schedule My Day';
+            btn.disabled = tasks.length === 0;
+
+            if (fail > 0) {
+                showStatus('error', `${ok} scheduled, ${fail} failed. Check channel name.`);
+                sound.error();
+            } else {
+                sound.fanfare();
+                showSuccess(ok);
+            }
+        }
+
+        function updateProgress(done, total) {
+            document.getElementById('progress-fill').style.width = `${(done / total) * 100}%`;
+            document.getElementById('progress-text').textContent = `${done} of ${total} scheduled`;
+        }
+
+        async function sendScheduledNotification(task) {
+            const [h, m] = task.time.split(':').map(Number);
+            const target = new Date();
+            target.setHours(h, m, 0, 0);
+            const unixTime = Math.floor(target.getTime() / 1000);
+
+            const motivation = randomMotivation();
+            const displayName = userName ? userName.charAt(0).toUpperCase() + userName.slice(1) : '';
+            const namePrefix = displayName ? `Hey ${displayName}! ` : '';
+
+            const payload = {
+                topic: topic,
+                title: `${task.emoji} Time for: ${task.name}`,
+                message: `${namePrefix}It's ${fmt12(task.time)} \u2014 have you completed "${task.name}"?`,
+                delay: String(unixTime),
+                priority: 4,
+                tags: ['bell'],
+                actions: [
+                    {
+                        action: 'http',
+                        label: 'Done \u2705',
+                        url: 'https://ntfy.sh/' + topic,
+                        method: 'POST',
+                        headers: {
+                            'Title': task.name + ' \u2014 Complete! \u{1F3C6}',
+                            'Tags': 'white_check_mark'
+                        },
+                        body: `${namePrefix}Great job finishing "${task.name}"! Keep the streak going!`,
+                        clear: true
+                    },
+                    {
+                        action: 'http',
+                        label: 'Not yet \u{1F605}',
+                        url: 'https://ntfy.sh/' + topic,
+                        method: 'POST',
+                        headers: {
+                            'Title': '\u{1F4AA} ' + task.name + ' \u2014 You got this!',
+                            'Tags': 'muscle',
+                            'Delay': '30m'
+                        },
+                        body: `${namePrefix}${motivation}`,
+                        clear: true
+                    }
+                ]
+            };
+
+            const resp = await fetch('https://ntfy.sh', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        }
+
+        // ============================================================
+        //  UI HELPERS
+        // ============================================================
+        function showStatus(type, msg) {
+            const el = document.getElementById('status');
+            el.textContent = msg;
+            el.className = 'status-bar ' + type;
+            if (type === 'info') setTimeout(hideStatus, 5000);
+        }
+
+        function hideStatus() {
+            const el = document.getElementById('status');
+            el.className = 'status-bar';
+            el.style.display = 'none';
+        }
+
+        function showSuccess(count) {
+            const word = count === 1 ? 'task' : 'tasks';
+            const name = userName ? userName.charAt(0).toUpperCase() + userName.slice(1) : '';
+            document.getElementById('success-title').textContent = name ? `${name}, You're All Set!` : 'Day Planned!';
+            document.getElementById('success-msg').textContent =
+                `${count} ${word} scheduled! You'll get notifications at each time with "Done" and "Not yet" buttons. Tap "Not yet" for a motivational push 30 min later.`;
+            document.getElementById('success-overlay').classList.add('show');
+
+            // Launch confetti
+            setTimeout(() => {
+                confetti.burst(window.innerWidth / 2, window.innerHeight / 3, 80);
+            }, 200);
+        }
+
+        function closeOverlay() {
+            document.getElementById('success-overlay').classList.remove('show');
+            confetti.destroy();
+        }
+
+        // ============================================================
+        //  KEYBOARD
+        // ============================================================
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                if (document.activeElement.id === 'task-input') {
+                    document.getElementById('time-input').focus();
+                } else if (document.activeElement.id === 'time-input') {
+                    addTask();
+                } else if (document.activeElement.id === 'topic-input') {
+                    saveTopic();
+                } else if (document.activeElement.id === 'name-input') {
+                    saveName();
+                }
+            }
+        });
+
+        // ============================================================
+        //  BOOT
+        // ============================================================
+        boot();
+    </script>
+</body>
+</html>
