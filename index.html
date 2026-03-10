@@ -1268,13 +1268,15 @@
                 ntfyEventSource = null;
             }
 
-            // Subscribe from today's midnight so past completions are replayed on page load
+            // Subscribe from today's midnight so past completions are replayed on page load.
+            // Uses a separate hidden channel ({topic}-done) so the completion signal never
+            // appears as a notification in the user's ntfy app.
             const todayMidnight = new Date();
             todayMidnight.setHours(0, 0, 0, 0);
             const sinceTs = Math.floor(todayMidnight.getTime() / 1000);
 
             ntfyEventSource = new EventSource(
-                'https://ntfy.sh/' + topic + '/sse?since=' + sinceTs
+                'https://ntfy.sh/' + topic + '-done/sse?since=' + sinceTs
             );
 
             ntfyEventSource.addEventListener('message', function(event) {
@@ -1395,7 +1397,7 @@
                     {
                         action: 'http',
                         label: 'Done \u2705',
-                        url: 'https://ntfy.sh/' + topic,
+                        url: 'https://ntfy.sh/' + topic + '-done',
                         method: 'POST',
                         headers: {
                             'Title': task.name + COMPLETION_SUFFIX,
